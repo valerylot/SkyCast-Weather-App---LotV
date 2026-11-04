@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyCast Weather App</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+
+<body class="bg-indigo-200 p-5">
+    <h1 class="bg-indigo-300 text-3xl py-3 w-full mx-auto rounded-md my-2 shadow-md text-center border-2 border-indigo-100 tracking-widest">SkyCast</h1>
+
+    <!-- START OF SEARCH FORM -->
+    <form id="search-form" class="flex flex-col mx-auto justify-end ml-auto items-end mr-4 gap-2">
+        <label for="search-input" class="font-semibold text-xl">Search for a city</label>
+        <input id="search-input" type="text" placeholder="Enter a city..." class="w-40 text-center border border-2 p-1 rounded-sm">
+        <button type="submit" class="border border-2 rounded-md px-5">Search</button>
+    </form>
+
+    <p id="status" class="text-center"></p>
+
+    <!-- TODAY CARD -->
+    <div class="flex flex-col bg-indigo-100 p-5 mx-auto border border-2 h-115 mt-5 rounded-sm">
+        <div id="today-location"></div>
+        <div id="today-temp" class="flex justify-center items-center"></div>
+        <div id="today-bottom" class="flex justify-between items-end">
+            <div id="bottom-left" class="flex flex-col"></div>
+            <div id="bottom-right" class="text-right"></div>
+        </div>
+    </div>
+
+
+    <!-- 5 DAY FORECAST -->
+    <div id="forecast"></div>
+
+
+
+    <script src="script.js"></script>
+</body>
+
+</html>
