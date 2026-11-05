@@ -22,7 +22,8 @@ async function todayFetch(city) {
     const data = await response.json();
 
     if (!response.ok) {
-        errorMessage();
+        statusEl.textContent = "Unable to load data.";
+        return;
     }
 
     showToday(data);
@@ -37,11 +38,11 @@ function showToday(today) {
     bottomRight.replaceChildren();
 
     const city = document.createElement("p");
-    city.classList.add("city-name");
+    city.classList.add("text-[30px]", "font-bold");
     city.textContent = today.name;
 
     const country = document.createElement("p");
-    country.classList.add("country-name")
+    country.classList.add("text-[20px]")
     country.textContent = today.sys.country;
 
     const todayDate = document.createElement("p");
@@ -49,17 +50,16 @@ function showToday(today) {
     todayDate.textContent = `${getCityDate(today.dt, today.timezone)}`;
 
     const temperature = document.createElement("p");
-    temperature.classList.add("temperature");
+    temperature.classList.add("text-[40px]", "md:text-[60px]");
     temperature.textContent = `${parseInt((today.main.temp - 273.15) * (9 / 5) + 32)}°F`;
 
     const todaysImage = document.createElement("img");
-    todaysImage.classList.add("todays-image");
-    // const iconCode = today.weather[0].icon;
+    todaysImage.classList.add("w-[100px]", "h-[100px", "md:w-[200px]", "md:h-[200px]");
     todaysImage.src = `https://openweathermap.org/img/wn/${today.weather[0].icon}@4x.png`;
     todaysImage.alt = `Icon of today's weather`;
 
     const description = document.createElement("p");
-    description.classList.add("description");
+    description.classList.add("font-normal", "text-[20px]");
     description.textContent = today.weather[0].description.charAt(0).toUpperCase() + today.weather[0].description.slice(1);
 
     const todaysHigh = document.createElement("p");
@@ -124,31 +124,132 @@ async function search(event) {
     event.preventDefault();
 
     const userInput = input.value.trim();
-    
 
-    setState("loading", "Loading the data for your city...");
-    
-    const response = await fetch(`${baseUrl}?q=${userInput}&appid=${apiKey}`);
-    const data = await response.json();
-
-    if (!response.ok) {
-        statusEl.textContent = `Please enter a valid city.`;
+    if(userInput === ""){
+        statusEl.textContent = "Please enter a valid city.";
         return;
     }
 
-    showToday(data);
+    setState("loading", "Loading the data for your city...");
+
+
+    const todayData = await todayFetch(userInput);
+    if(!todayData){
+        return;
+    }
+
+    const forecastData = await forecastFetch(userInput);
+    if(!forecastData){
+        return;
+    }
+
 
     statusEl.textContent = "";
     input.value = "";
-    
-    return data;
-}
+};
 
 function setState(state, message) {
     statusEl.dataset.state = state;
     statusEl.textContent = message;
-}
+};
 
+
+async function forecastFetch(city){
+    const response = await fetch(`${baseUrl2}?q=${city}&appid=${apiKey}`);
+    const forecastData = await response.json();
+
+    if (!response.ok) {
+        statusEl.textContent = "Unable to load forecast data.";
+        return;
+    }
+
+    showForecast(forecastData);
+
+    return forecastData;
+};
+
+function groupByDay(list, timezone){
+    const days = {};
+
+    for(const item of list){
+        const date = getCityDate(item.dt, timezone);
+
+        if(!days[date]){
+            days[date] = {
+                date: date,
+                high: item.main.temp_max,
+                low: item.main.temp_min,
+                icon: item.weather[0].icon,
+                description: item.weather[0].description.charAt(0).toUpperCase()+item.weather[0].description.slice(1)
+            };
+        };
+
+        if(item.main.temp_max > days[date].high){
+            days[date].high = item.main.temp_max;
+        };
+
+        if(item.main.temp_min < days[date].low){
+            days[date].low = item.main.temp_min;
+        };
+
+    };
+
+    const dayList = [];
+
+    for(const day in days){
+        dayList.push(days[day]);
+    };
+
+    return dayList;
+};
+
+function showForecast(forecastData){
+    forecast.replaceChildren();
+
+    const allDays = groupByDay(forecastData.list, forecastData.city.timezone);
+
+    const fiveDays = allDays.slice(1,6);
+
+
+    for(const day of fiveDays){
+        // console.log(day);
+
+        const forecastCard = document.createElement("div");
+        forecastCard.classList.add("border-2", "px-10", "justify-evenly", "rounded-sm", "py-3");
+
+        const date = document.createElement("p");
+        date.classList.add("forecast-date");
+        date.textContent = `${day.date}`;
+
+        const forecastImage = document.createElement("img");
+        forecastImage.classList.add("mx-auto");
+        forecastImage.src = `https://openweathermap.org/img/wn/${day.icon}@2x.png`;
+        forecastImage.alt = `Image depicting ${day.description}`;
+
+        const forecastDescription = document.createElement("p");
+        forecastDescription.classList.add("forecast-description");
+        forecastDescription.textContent = `${day.description}`;
+
+        const forecastHigh = document.createElement("p");
+        forecastHigh.classList.add("forecast-high");
+        forecastHigh.textContent = `H: ${parseInt((day.high - 273.15) * (9 / 5) + 32)}°F`;
+
+        const forecastLow = document.createElement("p");
+        forecastLow.classList.add("forecast-low");
+        forecastLow.textContent = `L: ${parseInt((day.low - 273.15) * (9 / 5) + 32)}°F`;
+    
+
+        forecastCard.appendChild(date);
+        forecastCard.appendChild(forecastImage);
+        forecastCard.appendChild(forecastDescription);
+        forecastCard.appendChild(forecastHigh);
+        forecastCard.appendChild(forecastLow);
+
+
+        forecast.appendChild(forecastCard);
+    };
+
+};
 
 
 
@@ -158,4 +259,4 @@ searchForm.addEventListener("submit", search);
 
 // ----- run on load -----
 todayFetch("Stockton");
-// showForecast();
+forecastFetch("Stockton");
