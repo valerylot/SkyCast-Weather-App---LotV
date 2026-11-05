@@ -1,6 +1,8 @@
 // ----- data -----
+const apiKey = "bf397107bcc194308bec5cc3b977fe5f";
 const baseUrl = `https://api.openweathermap.org/data/2.5/weather`;
 const baseUrl2 = `https://api.openweathermap.org/data/2.5/forecast`;
+
 
 // ----- elements -----
 const todayLocation = document.getElementById("today-location");
@@ -15,6 +17,9 @@ const searchForm = document.getElementById("search-form");
 const input = document.getElementById("search-input");
 const statusEl = document.getElementById("status");
 
+const findButton = document.getElementById("find-me");
+const locStatus = document.getElementById("loc-status");
+
 
 // ----- functions -----
 async function todayFetch(city) {
@@ -22,7 +27,7 @@ async function todayFetch(city) {
     const data = await response.json();
 
     if (!response.ok) {
-        statusEl.textContent = "Unable to load data.";
+        statusEl.textContent = "Unable to load data. Please try again.";
         return;
     }
 
@@ -54,7 +59,7 @@ function showToday(today) {
     temperature.textContent = `${parseInt((today.main.temp - 273.15) * (9 / 5) + 32)}°F`;
 
     const todaysImage = document.createElement("img");
-    todaysImage.classList.add("w-[100px]", "h-[100px", "md:w-[200px]", "md:h-[200px]");
+    todaysImage.classList.add("w-[150px]", "h-[150px", "md:w-[200px]", "md:h-[200px]");
     todaysImage.src = `https://openweathermap.org/img/wn/${today.weather[0].icon}@4x.png`;
     todaysImage.alt = `Icon of today's weather`;
 
@@ -184,6 +189,7 @@ function groupByDay(list, timezone){
             };
         };
 
+
         if(item.main.temp_max > days[date].high){
             days[date].high = item.main.temp_max;
         };
@@ -215,7 +221,7 @@ function showForecast(forecastData){
         // console.log(day);
 
         const forecastCard = document.createElement("div");
-        forecastCard.classList.add("border-2", "px-10", "justify-evenly", "rounded-sm", "py-3");
+        forecastCard.classList.add("border-2", "px-10", "justify-evenly", "rounded-sm", "py-3", "bg-indigo-300", "md:border-white");
 
         const date = document.createElement("p");
         date.classList.add("forecast-date");
@@ -251,10 +257,61 @@ function showForecast(forecastData){
 
 };
 
+const success = async (position) => {
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
+
+    getLocationWeather(lat, lon);
+    getLocationForecast(lat, lon);
+
+
+    const data = await getLocationWeather(lat, lon);
+    const forecastData = await getLocationForecast(lat, lon);
+
+    showToday(data);
+    showForecast(forecastData);
+
+    locStatus.textContent = "Located you.";
+
+}
+
+const getLocationWeather = async (lat, lon) => {
+    const res = await fetch(`${baseUrl}?lat=${lat}&lon=${lon}&appid=${apiKey}`);
+    const data = await res.json();
+    
+    if(!res.ok){
+        locStatus.textContent = "Unable to locate you.";
+        return;
+    }
+    return data;
+}
+
+const getLocationForecast = async (lat, lon) => {
+    const res = await fetch(`${baseUrl2}?lat=${lat}&lon=${lon}&appid=${apiKey}`);
+    const forecastData = await res.json();
+
+    if(!res.ok){
+        locStatus.textContent = "Unable to locate you.";
+        return;
+    }
+    return forecastData;
+}
+
+const error = (err) => {
+    if(err.code === 1){
+        locStatus.textContent = "You blocked your location. Allow it and try again.";
+    }else{
+        locStatus.textContent = "We couldn't retrieve your location.";
+    }
+}
 
 
 // ----- listeners -----
 searchForm.addEventListener("submit", search);
+findButton.addEventListener("click", () =>{
+    locStatus.textContent = "Locating you...";
+    navigator.geolocation.getCurrentPosition(success, error);
+});
 
 
 // ----- run on load -----
