@@ -1,13 +1,12 @@
+import { todayFetch, forecastFetch, getLocationWeather, getLocationForecast } from "./api.js";
+
 // ----- data -----
-const apiKey = "bf397107bcc194308bec5cc3b977fe5f";
-const baseUrl = `https://api.openweathermap.org/data/2.5/weather`;
-const baseUrl2 = `https://api.openweathermap.org/data/2.5/forecast`;
+
 
 
 // ----- elements -----
 const todayLocation = document.getElementById("today-location");
 const todayTemp = document.getElementById("today-temp");
-const todayBottom = document.getElementById("today-bottom");
 const bottomLeft = document.getElementById("bottom-left");
 const bottomRight = document.getElementById("bottom-right");
 
@@ -22,19 +21,6 @@ const locStatus = document.getElementById("loc-status");
 
 
 // ----- functions -----
-async function todayFetch(city) {
-    const response = await fetch(`${baseUrl}?q=${city}&appid=${apiKey}`);
-    const data = await response.json();
-
-    if (!response.ok) {
-        statusEl.textContent = "Unable to load data. Please try again.";
-        return;
-    }
-
-    showToday(data);
-    return data;
-}
-
 
 function showToday(today) {
     todayLocation.replaceChildren();
@@ -112,7 +98,7 @@ function showToday(today) {
     bottomRight.appendChild(sunrise);
     bottomRight.appendChild(sunset);
 
-}
+};
 
 function getCityTime(unixSeconds, timezone) {
     const date = new Date((unixSeconds + timezone) * 1000);
@@ -130,7 +116,7 @@ async function search(event) {
 
     const userInput = input.value.trim();
 
-    if(userInput === ""){
+    if (userInput === "") {
         statusEl.textContent = "Please enter a valid city.";
         return;
     }
@@ -140,14 +126,19 @@ async function search(event) {
 
     const todayData = await todayFetch(userInput);
     if(!todayData){
+        statusEl.textContent = "Unable to load data. Please try again.";
         return;
     }
 
     const forecastData = await forecastFetch(userInput);
     if(!forecastData){
+        statusEl.textContent = "Unable to load forecast data.";
         return;
     }
 
+
+    showToday(todayData);
+    showForecast(forecastData);
 
     statusEl.textContent = "";
     input.value = "";
@@ -159,42 +150,28 @@ function setState(state, message) {
 };
 
 
-async function forecastFetch(city){
-    const response = await fetch(`${baseUrl2}?q=${city}&appid=${apiKey}`);
-    const forecastData = await response.json();
-
-    if (!response.ok) {
-        statusEl.textContent = "Unable to load forecast data.";
-        return;
-    }
-
-    showForecast(forecastData);
-
-    return forecastData;
-};
-
-function groupByDay(list, timezone){
+function groupByDay(list, timezone) {
     const days = {};
 
-    for(const item of list){
+    for (const item of list) {
         const date = getCityDate(item.dt, timezone);
 
-        if(!days[date]){
+        if (!days[date]) {
             days[date] = {
                 date: date,
                 high: item.main.temp_max,
                 low: item.main.temp_min,
                 icon: item.weather[0].icon,
-                description: item.weather[0].description.charAt(0).toUpperCase()+item.weather[0].description.slice(1)
+                description: item.weather[0].description.charAt(0).toUpperCase() + item.weather[0].description.slice(1)
             };
         };
 
 
-        if(item.main.temp_max > days[date].high){
+        if (item.main.temp_max > days[date].high) {
             days[date].high = item.main.temp_max;
         };
 
-        if(item.main.temp_min < days[date].low){
+        if (item.main.temp_min < days[date].low) {
             days[date].low = item.main.temp_min;
         };
 
@@ -202,22 +179,22 @@ function groupByDay(list, timezone){
 
     const dayList = [];
 
-    for(const day in days){
+    for (const day in days) {
         dayList.push(days[day]);
     };
 
     return dayList;
 };
 
-function showForecast(forecastData){
+function showForecast(forecastData) {
     forecast.replaceChildren();
 
     const allDays = groupByDay(forecastData.list, forecastData.city.timezone);
 
-    const fiveDays = allDays.slice(1,6);
+    const fiveDays = allDays.slice(1, 6);
 
 
-    for(const day of fiveDays){
+    for (const day of fiveDays) {
         // console.log(day);
 
         const forecastCard = document.createElement("div");
@@ -243,7 +220,7 @@ function showForecast(forecastData){
         const forecastLow = document.createElement("p");
         forecastLow.classList.add("forecast-low");
         forecastLow.textContent = `L: ${parseInt((day.low - 273.15) * (9 / 5) + 32)}°F`;
-    
+
 
         forecastCard.appendChild(date);
         forecastCard.appendChild(forecastImage);
@@ -261,12 +238,13 @@ const success = async (position) => {
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
 
-    getLocationWeather(lat, lon);
-    getLocationForecast(lat, lon);
-
-
     const data = await getLocationWeather(lat, lon);
     const forecastData = await getLocationForecast(lat, lon);
+
+    if(!data || !forecastData){
+        locStatus.textContent = "Unable to retrieve data.";
+        return;
+    }
 
     showToday(data);
     showForecast(forecastData);
@@ -275,32 +253,10 @@ const success = async (position) => {
 
 }
 
-const getLocationWeather = async (lat, lon) => {
-    const res = await fetch(`${baseUrl}?lat=${lat}&lon=${lon}&appid=${apiKey}`);
-    const data = await res.json();
-    
-    if(!res.ok){
-        locStatus.textContent = "Unable to locate you.";
-        return;
-    }
-    return data;
-}
-
-const getLocationForecast = async (lat, lon) => {
-    const res = await fetch(`${baseUrl2}?lat=${lat}&lon=${lon}&appid=${apiKey}`);
-    const forecastData = await res.json();
-
-    if(!res.ok){
-        locStatus.textContent = "Unable to locate you.";
-        return;
-    }
-    return forecastData;
-}
-
 const error = (err) => {
-    if(err.code === 1){
+    if (err.code === 1) {
         locStatus.textContent = "You blocked your location. Allow it and try again.";
-    }else{
+    } else {
         locStatus.textContent = "We couldn't retrieve your location.";
     }
 }
@@ -308,12 +264,14 @@ const error = (err) => {
 
 // ----- listeners -----
 searchForm.addEventListener("submit", search);
-findButton.addEventListener("click", () =>{
+findButton.addEventListener("click", () => {
     locStatus.textContent = "Locating you...";
     navigator.geolocation.getCurrentPosition(success, error);
 });
 
 
 // ----- run on load -----
-todayFetch("Stockton");
-forecastFetch("Stockton");
+const stocktonData = await todayFetch("Stockton");
+const stocktonForecastaData = await forecastFetch("Stockton");
+showToday(stocktonData);
+showForecast(stocktonForecastaData);
