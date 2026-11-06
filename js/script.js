@@ -126,13 +126,13 @@ async function search(event) {
 
     const todayData = await todayFetch(userInput);
     if(!todayData){
-        statusEl.textContent = "Unable to load data. Please try again.";
+        statusEl.textContent = "Location not found. Please try again.";
         return;
     }
 
     const forecastData = await forecastFetch(userInput);
     if(!forecastData){
-        statusEl.textContent = "Unable to load forecast data.";
+        statusEl.textContent = "Location not found. Please try again.";
         return;
     }
 
