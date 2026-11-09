@@ -307,13 +307,12 @@ const updateFavoriteButton = () => {
         "text-center",
         "font-semibold",
         "mt-3",
-        "max-h-11",
-        "hover:bg-blue-200"
+        "max-h-11"
     );
     if (favoriteCities.includes(currentWeather.name) === true) {
-        addFav.textContent = "❌ Remove Favorite";
+        addFav.textContent = "❌ Remove";
     } else {
-        addFav.textContent = "❤️ Add to Favorites"
+        addFav.textContent = "❤️ Favorite"
     };
 };
 
