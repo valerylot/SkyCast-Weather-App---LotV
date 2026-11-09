@@ -13,7 +13,11 @@
         shadow-md text-center border-2 border-indigo-100 tracking-widest font-bold">
         SkyCast</h1>
 
+    <button id="favorites-button" type="button"
+        class="border-2 border-white rounded-md p-2 text-center text-white font-semibold mt-3">❤️ Favorited
+        Cities</button>
 
+    <div id="favorites-container" hidden class="max-w-50 max-h-50"></div>
 
     <!-- START OF SEARCH FORM -->
     <form id="search-form" class="flex flex-col mx-auto justify-end ml-auto items-end mr-4 gap-2 text-white">
@@ -37,7 +41,10 @@
     <!-- TODAY CARD -->
     <div
         class="flex flex-col bg-indigo-300 p-5 mx-auto border border-2 h-auto lg:h-115 mt-5 rounded-md opacity-70 md:border-white">
-        <div id="today-location"></div>
+        <div class="flex justify-between">
+            <div id="today-location"></div>
+            <div id="add-favorite"><button type="button" class="border-2 rounded-md p-2 text-center hover:bg-pink-300">❤️ Save this city</button></div>
+        </div>
         <div id="today-temp" class="flex justify-center items-center"></div>
         <div id="today-bottom" class="flex justify-between items-end">
             <div id="bottom-left" class="flex flex-col"></div>

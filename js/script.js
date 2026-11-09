@@ -1,7 +1,8 @@
 import { todayFetch, forecastFetch, getLocationWeather, getLocationForecast } from "./api.js";
 
 // ----- data -----
-
+let favoriteCities = JSON.parse(localStorage.getItem("favoriteCities")) || [];
+let currentWeather = null;
 
 
 // ----- elements -----
@@ -18,6 +19,10 @@ const statusEl = document.getElementById("status");
 
 const findButton = document.getElementById("find-me");
 const locStatus = document.getElementById("loc-status");
+
+const favBtn = document.getElementById("favorites-button");
+const addFav = document.getElementById("add-favorite");
+const favContainer = document.getElementById("favorites-container");
 
 
 // ----- functions -----
@@ -125,13 +130,15 @@ async function search(event) {
 
 
     const todayData = await todayFetch(userInput);
-    if(!todayData){
+    if (!todayData) {
         statusEl.textContent = "Location not found. Please try again.";
         return;
     }
 
+    currentWeather = todayData;
+
     const forecastData = await forecastFetch(userInput);
-    if(!forecastData){
+    if (!forecastData) {
         statusEl.textContent = "Location not found. Please try again.";
         return;
     }
@@ -139,6 +146,8 @@ async function search(event) {
 
     showToday(todayData);
     showForecast(forecastData);
+
+    updateFavoriteButton();
 
     statusEl.textContent = "";
     input.value = "";
@@ -221,6 +230,10 @@ function showForecast(forecastData) {
         forecastLow.classList.add("forecast-low");
         forecastLow.textContent = `L: ${parseInt((day.low - 273.15) * (9 / 5) + 32)}°F`;
 
+        if(day === fiveDays[fiveDays.length - 1]){
+            forecastCard.classList.add("col-span-2", "lg:col-span-1");
+        }
+
 
         forecastCard.appendChild(date);
         forecastCard.appendChild(forecastImage);
@@ -241,17 +254,21 @@ const success = async (position) => {
     const data = await getLocationWeather(lat, lon);
     const forecastData = await getLocationForecast(lat, lon);
 
-    if(!data || !forecastData){
+    if (!data || !forecastData) {
         locStatus.textContent = "Unable to retrieve data.";
         return;
     }
 
+    currentWeather = data;
+
     showToday(data);
     showForecast(forecastData);
 
+    updateFavoriteButton();
+
     locStatus.textContent = "Located you.";
 
-}
+};
 
 const error = (err) => {
     if (err.code === 1) {
@@ -259,19 +276,118 @@ const error = (err) => {
     } else {
         locStatus.textContent = "We couldn't retrieve your location.";
     }
-}
+};
 
+const addFavorite = (today) => {
+    const cityName = today.name;
+
+    if (favoriteCities.includes(cityName)) {
+        let cityIndex = favoriteCities.indexOf(cityName);
+        favoriteCities.splice(cityIndex, 1);
+    } else {
+        favoriteCities.push(cityName);
+    }
+
+    localStorage.setItem("favoriteCities", JSON.stringify(favoriteCities));
+
+    updateFavoriteButton();
+
+    if (!favContainer.hidden) {
+        showFavorites();
+    };
+};
+
+const updateFavoriteButton = () => {
+
+    addFav.classList.add(
+        "border-2",
+        "border-black",
+        "rounded-md",
+        "p-2",
+        "text-center",
+        "font-semibold",
+        "mt-3",
+        "max-h-11",
+        "hover:bg-blue-200"
+    );
+    if (favoriteCities.includes(currentWeather.name) === true) {
+        addFav.textContent = "❌ Remove Favorite";
+    } else {
+        addFav.textContent = "❤️ Add to Favorites"
+    };
+};
+
+const showFavorites = () => {
+    favContainer.replaceChildren();
+
+    for (const city of favoriteCities) {
+        const cityButton = document.createElement("button");
+        cityButton.textContent = city;
+
+        cityButton.classList.add(
+            "border-2", 
+            "rounded-md", 
+            "p-2", 
+            "border-white", 
+            "m-2", 
+            "text-center",
+            "text-white");
+
+        favContainer.appendChild(cityButton);
+
+        cityButton.addEventListener("click", async function () {
+            const todayData = await todayFetch(city);
+
+            const forecastData = await forecastFetch(city);
+
+            if (!todayData || !forecastData) {
+                statusEl.textContent = "Unable to retrieve city data.";
+                return;
+            }
+
+            currentWeather = todayData;
+
+            showToday(todayData);
+            showForecast(forecastData);
+
+            updateFavoriteButton();
+
+            statusEl.textContent = "";
+        });
+    };
+
+};
 
 // ----- listeners -----
 searchForm.addEventListener("submit", search);
+
 findButton.addEventListener("click", () => {
     locStatus.textContent = "Locating you...";
     navigator.geolocation.getCurrentPosition(success, error);
+});
+
+addFav.addEventListener("click", function () {
+    if (currentWeather !== null) {
+        addFavorite(currentWeather);
+    }
+});
+
+favBtn.addEventListener("click", function () {
+    favContainer.hidden = !favContainer.hidden;
+
+    if (!favContainer.hidden) {
+        showFavorites();
+    }
 });
 
 
 // ----- run on load -----
 const stocktonData = await todayFetch("Stockton");
 const stocktonForecastaData = await forecastFetch("Stockton");
+
+currentWeather = stocktonData;
+
 showToday(stocktonData);
 showForecast(stocktonForecastaData);
+
+updateFavoriteButton();
